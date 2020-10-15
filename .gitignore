@@ -1,3 +1,4 @@
-.onnx
-.jpg
-.pkl
+*.onnx
+*.jpg
+*.png
+*.pkl

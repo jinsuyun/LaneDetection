@@ -110,10 +110,10 @@ def Testing():
             _, _, ti = test(lane_agent, np.array([test_image]))
 
             idx+=1
-            #cv2.imwrite("result/{}".format(image.split('/')[-1]),ti[0])
+            cv2.imwrite("result/{}".format(image.split('/')[-1]),ti[0])
             print("Idx:", idx, "\t\tImage: ", image.split('/')[-1])
-            cv2.imshow("test", ti[0])
-            cv2.waitKey(0)
+            #cv2.imshow("test", ti[0])
+            #cv2.waitKey(0)
 
     elif p.mode == 3: #evaluation
         print("evaluate")

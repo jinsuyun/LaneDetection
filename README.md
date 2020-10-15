@@ -15,4 +15,5 @@ mode 3 : Test the model on whole test set, and save result as json file.
 TuSimple
 Accuracy: 0.96, FP: 0.03, FN: 0.02
 
+## 실행
 python test.py -i /input image directory

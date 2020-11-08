@@ -21,10 +21,12 @@ import glob
 import os
 p = Parameters()
 
+xy_text = open('xytext.txt', 'w')
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--img_path", '-i', type=str, default="demo/demo.jpg", help="Path to demo img")
+    parser.add_argument("--img_path", '-i', type=str, default="demo/demo.jpg", help="Path to input img")
     args = parser.parse_args()
     return args
 ###############################################################
@@ -34,8 +36,8 @@ def parse_args():
 ###############################################################
 def Testing():
     args=parse_args()
+
     print('Testing')
-    
     #########################################################################
     ## Get dataset
     #########################################################################
@@ -102,6 +104,9 @@ def Testing():
         imgs = sorted(imgs)  # real image
         idx=0
         for image in imgs:
+            idx += 1
+            xy_text.write("FrameNo: " + str(idx) + "\n")
+            print("Idx:", idx, "\t\tImage: ", image.split('/')[-1])
 
             test_image = cv2.imread(image)
             #test_image = cv2.imread(p.test_root_url+"clips/0530/1492720840345996040_0/1.jpg")
@@ -109,11 +114,16 @@ def Testing():
             test_image = np.rollaxis(test_image, axis=2, start=0)
             _, _, ti = test(lane_agent, np.array([test_image]))
 
-            idx+=1
+
             cv2.imwrite("result/{}".format(image.split('/')[-1]),ti[0])
-            print("Idx:", idx, "\t\tImage: ", image.split('/')[-1])
-            #cv2.imshow("test", ti[0])
-            #cv2.waitKey(0)
+
+
+            xy_text.write("\n")
+
+            cv2.imshow("test", ti[0])
+            cv2.waitKey(0)
+
+        xy_text.close()
 
     elif p.mode == 3: #evaluation
         print("evaluate")
@@ -298,7 +308,7 @@ def test(lane_agent, test_images, thresh = p.threshold_point, index= -1):
     out_x = []
     out_y = []
     out_images = []
-    
+
     for i in range(num_batch):
         # test on test data set
         image = deepcopy(test_images[i])
@@ -321,11 +331,52 @@ def test(lane_agent, test_images, thresh = p.threshold_point, index= -1):
 
         # eliminate fewer points
         in_x, in_y = eliminate_fewer_points(raw_x, raw_y)
-                
-        # sort points along y 
-        in_x, in_y = util.sort_along_y(in_x, in_y)  
 
-        result_image = util.draw_points(in_x, in_y, deepcopy(image))
+        # sort points along y 
+        in_x, in_y = util.sort_along_y(in_x, in_y)
+        lineNo=0
+        h,w=image.shape[:2]
+        centerX=w/2
+
+        minleft = 99999
+        minright = 99999
+        result_x=[]
+        result_y=[]
+        for i,j in zip(in_x,in_y):
+            cen_avg = (sum(i) / len(i))
+            if centerX < cen_avg:
+                distanceR=abs(centerX-cen_avg)
+                if minright>distanceR:
+                    minright=distanceR
+            else:
+                distanceL=abs(centerX-cen_avg)
+                if minleft>distanceL:
+                    minleft=distanceL
+
+        for i,j in zip(in_x,in_y):
+            avg=(sum(i)/len(i))
+            trueFalse=False
+            direction=""
+            if minright==abs(centerX-avg):
+                result_x.append(i)
+                result_y.append(j)
+                direction="R"
+                trueFalse=True
+            if minleft==abs(centerX-avg):
+                result_x.append(i)
+                result_y.append(j)
+                direction = "L"
+                trueFalse=True
+            if trueFalse:
+                lineNo += 1
+                for index in range(len(i)):
+                   xy="LineNo: "+str(lineNo)+" Direction: "+direction+" x: "+str(i[index])+" y: "+str(j[index])+"\n"
+                   xy_text.write(xy)
+
+
+        result_image = util.draw_points(result_x, result_y, deepcopy(image))
+
+#        result_image = util.draw_points(in_x, in_y, deepcopy(image))
 
         out_x.append(in_x)
         out_y.append(in_y)
@@ -340,10 +391,12 @@ def eliminate_fewer_points(x, y):
     # eliminate fewer points
     out_x = []
     out_y = []
+
     for i, j in zip(x, y):
         if len(i)>2:
             out_x.append(i)
-            out_y.append(j)     
+            out_y.append(j)
+
     return out_x, out_y   
 
 ############################################################################
@@ -366,6 +419,8 @@ def generate_result(confidance, offsets,instance, thresh):
             point_y = int((offset[i][1]+grid[i][1])*p.resize_ratio)
             if point_x > p.x_size or point_x < 0 or point_y > p.y_size or point_y < 0:
                 continue
+            x.append([point_x])
+            y.append([point_y])
             if len(lane_feature) == 0:
                 lane_feature.append(feature[i])
                 x.append([point_x])
@@ -375,20 +430,21 @@ def generate_result(confidance, offsets,instance, thresh):
                 index = 0
                 min_feature_index = -1
                 min_feature_dis = 10000
+
                 for feature_idx, j in enumerate(lane_feature):
                     dis = np.linalg.norm((feature[i] - j)**2)
                     if min_feature_dis > dis:
                         min_feature_dis = dis
                         min_feature_index = feature_idx
                 if min_feature_dis <= p.threshold_instance:
-                    lane_feature[min_feature_index] = (lane_feature[min_feature_index]*len(x[min_feature_index]) + feature[i])/(len(x[min_feature_index])+1)
+                    #lane_feature[min_feature_index] = (lane_feature[min_feature_index]*len(x[min_feature_index]) + feature[i])/(len(x[min_feature_index])+1)
                     x[min_feature_index].append(point_x)
                     y[min_feature_index].append(point_y)
                 elif len(lane_feature) < 12:
                     lane_feature.append(feature[i])
                     x.append([point_x])
                     y.append([point_y])
-                
+
     return x, y
 
 if __name__ == '__main__':

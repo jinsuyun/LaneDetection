@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from torch.autograd import Function as F
 from parameters import Parameters
 import math
-
+import test
 p = Parameters()
 
 def cross_entropy2d(inputs, target, weight=None, size_average=True):
@@ -87,13 +87,21 @@ def visualize_regression(image, gt):
     cv2.waitKey(0)   
 
 def draw_points(x, y, image):
+
     color_index = 0
     for i, j in zip(x, y):
         color_index += 1
+
         if color_index > 12:
             color_index = 12
+        #if color_index >2: # only 2  lines
+        #    break
         for index in range(len(i)):
             image = cv2.circle(image, (int(i[index]), int(j[index])), 5, p.color[color_index], -1)
+
+            # cv2.imshow("asd", image)
+            # cv2.waitKey(0)
+
 
     return image
 

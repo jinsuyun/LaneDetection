@@ -2,4 +2,4 @@
 *.jpg
 *.png
 *.pkl
-/result/*.jpg
+result/*.jpg

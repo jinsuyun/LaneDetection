@@ -109,19 +109,20 @@ def Testing():
             print("Idx:", idx, "\t\tImage: ", image.split('/')[-1])
 
             test_image = cv2.imread(image)
+            origin_image=test_image
+
             #test_image = cv2.imread(p.test_root_url+"clips/0530/1492720840345996040_0/1.jpg")
             test_image = cv2.resize(test_image, (512,256))/255.0
             test_image = np.rollaxis(test_image, axis=2, start=0)
-            _, _, ti = test(lane_agent, np.array([test_image]))
+            _, _, ti = test(lane_agent,origin_image ,np.array([test_image]))
 
 
             cv2.imwrite("result/{}".format(image.split('/')[-1]),ti[0])
 
-
             xy_text.write("\n")
 
-            cv2.imshow("test", ti[0])
-            cv2.waitKey(0)
+            #cv2.imshow("test", ti[0])
+            #cv2.waitKey(0)
 
         xy_text.close()
 
@@ -297,7 +298,7 @@ def save_result(result_data, fname):
 ############################################################################
 ## test on the input test image
 ############################################################################
-def test(lane_agent, test_images, thresh = p.threshold_point, index= -1):
+def test(lane_agent, origin_images,test_images, thresh = p.threshold_point, index= -1):
 
     result = lane_agent.predict_lanes_test(test_images)
     torch.cuda.synchronize()
@@ -353,6 +354,10 @@ def test(lane_agent, test_images, thresh = p.threshold_point, index= -1):
                 if minleft>distanceL:
                     minleft=distanceL
 
+        origin_h, origin_w = origin_images.shape[0:2]
+        ratio_h = origin_h / 256
+        ratio_w = origin_w / 512
+
         for i,j in zip(in_x,in_y):
             avg=(sum(i)/len(i))
             trueFalse=False
@@ -370,11 +375,12 @@ def test(lane_agent, test_images, thresh = p.threshold_point, index= -1):
             if trueFalse:
                 lineNo += 1
                 for index in range(len(i)):
-                   xy="LineNo: "+str(lineNo)+" Direction: "+direction+" x: "+str(i[index])+" y: "+str(j[index])+"\n"
+                   xy="LineNo: "+str(lineNo)+" Direction: "+direction+" x: "+str(int(i[index]*ratio_w))+" y: "+str(int(j[index]*ratio_h))+"\n"
                    xy_text.write(xy)
 
 
-        result_image = util.draw_points(result_x, result_y, deepcopy(image))
+        result_image = util.draw_points2(result_x, result_y, origin_images,ratio_h,ratio_w)
+#        result_image = util.draw_points(result_x, result_y, deepcopy(image))
 
 #        result_image = util.draw_points(in_x, in_y, deepcopy(image))
 

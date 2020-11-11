@@ -94,8 +94,7 @@ def draw_points(x, y, image):
 
         if color_index > 12:
             color_index = 12
-        #if color_index >2: # only 2  lines
-        #    break
+
         for index in range(len(i)):
             image = cv2.circle(image, (int(i[index]), int(j[index])), 5, p.color[color_index], -1)
 
@@ -105,6 +104,23 @@ def draw_points(x, y, image):
 
     return image
 
+def draw_points2(x, y, image,ratio_h,ratio_w): #points draw origin images
+
+    color_index = 0
+    for i, j in zip(x, y):
+        color_index += 1
+
+        if color_index > 12:
+            color_index = 12
+
+        for index in range(len(i)):
+            image = cv2.circle(image, (int(i[index]*ratio_w), int(j[index]*ratio_h)), 5, p.color[color_index], -1)
+
+            # cv2.imshow("asd", image)
+            # cv2.waitKey(0)
+
+
+    return image
 ###############################################################
 ##
 ## calculate
